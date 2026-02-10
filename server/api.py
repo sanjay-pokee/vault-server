@@ -99,7 +99,7 @@ def mfa_setup(authorization: str = Header()):
 def mfa_verify(req: MFAVerifyReq):
     """Verify MFA code and enable MFA for user"""
     try:
-        is_valid = verify_mfa(req.username.lower(), req.code)
+        is_valid = verify_mfa(req.username.lower(), req.code.strip())
         if is_valid:
             return {"ok": True, "message": "MFA enabled successfully"}
         else:
@@ -110,20 +110,24 @@ def mfa_verify(req: MFAVerifyReq):
 @app.post("/login/mfa")
 def login_with_mfa(req: MFALoginReq):
     """Login with username, password, and MFA code"""
+    username = req.username.lower()
     try:
-        username = req.username.lower()
-        
         # First verify password
         token = login_user(username, req.verifier)
-        
+    except ValueError:
+        raise HTTPException(401, "Invalid username or password")
+    
+    try:
         # Then verify MFA code
-        is_valid = verify_mfa(username, req.mfa_code)
+        is_valid = verify_mfa(username, req.mfa_code.strip(), enable_on_success=False)
         if not is_valid:
             raise HTTPException(401, "Invalid MFA code")
         
         return {"token": token}
-    except ValueError:
-        raise HTTPException(401, "Invalid credentials")
+    except ValueError as e:
+        if "MFA not set up" in str(e):
+            raise HTTPException(400, "MFA not enabled for this user")
+        raise HTTPException(401, "MFA verification failed")
 
 @app.get("/mfa/status/{username}")
 def mfa_status(username: str):

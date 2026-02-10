@@ -130,9 +130,12 @@ def verify_mfa(username: str, code: str, enable_on_success: bool = True):
     if not user or not user.get("mfa_secret"):
         raise ValueError("MFA not set up")
     
-    # Try TOTP verification first
+    # Strip whitespace from code
+    code = code.strip()
+    
+    # Try TOTP verification first (valid_window=2 allows for time skew)
     totp = pyotp.TOTP(user["mfa_secret"])
-    if totp.verify(code, valid_window=1):
+    if totp.verify(code, valid_window=2):
         if enable_on_success and not user.get("mfa_enabled"):
             user["mfa_enabled"] = True
             _save(users)
