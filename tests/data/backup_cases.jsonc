@@ -1,0 +1,27 @@
+[
+    {
+        // Ensures that data is correctly encrypted (Fernet header 'gAAAA') and saved with a timestamped filename.
+        "name": "Create Backup Success",
+        "action": "CREATE",
+        "username": "testuser",
+        "blob_data": {
+            "secret": "my_secrets"
+        },
+        "expected_filename_prefix": "backup_testuser_",
+        "expected_file_content_prefix": "gAAAA"
+    },
+    {
+        // Ensures that a valid encrypted backup file can be decrypted and restored to the user's data file.
+        "name": "Restore Backup Success",
+        "action": "RESTORE",
+        "username": "testuser",
+        "filename": "backup_testuser_2026.enc",
+        "file_content": "gAAAAABk...encrypted_data...",
+        "original_blob": {
+            "secret": "my_secrets"
+        },
+        "expected_restored_blob": {
+            "secret": "my_secrets"
+        }
+    }
+]

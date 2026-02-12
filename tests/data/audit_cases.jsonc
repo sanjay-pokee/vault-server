@@ -1,0 +1,38 @@
+[
+    {
+        // Verifies that a user registration action is logged correctly with the REGISTER action type.
+        "name": "Register User",
+        "action": "REGISTER",
+        "username": "newuser",
+        "details": "User registered",
+        "expected_log_entry": {
+            "action": "REGISTER",
+            "username": "newuser",
+            "details": "User registered"
+        }
+    },
+    {
+        // Verifies that a successful login event is logged, which is crucial for monitoring access frequency.
+        "name": "Login Success",
+        "action": "LOGIN",
+        "username": "testuser",
+        "details": "User logged in",
+        "expected_log_entry": {
+            "action": "LOGIN",
+            "username": "testuser",
+            "details": "User logged in"
+        }
+    },
+    {
+        // Verifies that accessing the vault triggers a VAULT_ACCESS log, essential for tracking data access.
+        "name": "Vault Access",
+        "action": "VAULT_ACCESS",
+        "username": "testuser",
+        "details": "Vault retrieved",
+        "expected_log_entry": {
+            "action": "VAULT_ACCESS",
+            "username": "testuser",
+            "details": "Vault retrieved"
+        }
+    }
+]
