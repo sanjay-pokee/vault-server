@@ -1,0 +1,50 @@
+[
+    {
+        // Baseline case: A single failed attempt should maximize the counter but NOT block the IP.
+        "name": "Normal Login Attempt",
+        "initial_failures": 0,
+        "action_attempts": 1,
+        "is_password_valid": false,
+        "expected_blocked": false,
+        "expected_attempts_recorded": 1
+    },
+    {
+        // Edge case: The 5th failed attempt should trigger the block immediately.
+        "name": "Threshold Reached",
+        "initial_failures": 4,
+        "action_attempts": 1,
+        "is_password_valid": false,
+        "expected_blocked": true,
+        "expected_attempts_recorded": 5
+    },
+    {
+        // Blocked state: If the IP is already blocked and the duration hasn't passed, any request should throw 'IP blocked'.
+        "name": "Already Blocked (Under Duration)",
+        "initial_failures": 5,
+        "time_elapsed": 30,
+        "action_attempts": 1,
+        "is_password_valid": false,
+        "expected_blocked": true,
+        "expected_error": "IP blocked"
+    },
+    {
+        // Expiry: After the block duration (60s) passes, the next attempt should be allowed and reset the counter or start fresh.
+        "name": "Block Expired",
+        "initial_failures": 5,
+        "time_elapsed": 61,
+        "action_attempts": 1,
+        "is_password_valid": false,
+        "expected_blocked": false,
+        "expected_attempts_recorded": 1
+    },
+    {
+        // Recovery: After the block duration (60s) passes, a correct password attempt should succeed (and not increment failure count).
+        "name": "Block Expired - Correct Password",
+        "initial_failures": 5,
+        "time_elapsed": 61,
+        "action_attempts": 1,
+        "is_password_valid": true,
+        "expected_blocked": false,
+        "expected_attempts_recorded": 5
+    }
+]

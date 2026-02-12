@@ -1,0 +1,11 @@
+{
+    // Configuration for verified HTTPS connection tests. URL directs to the local secure server.
+    "url": "https://127.0.0.1:8000/",
+    "timeout": 5,
+    "verify_cert": false,
+    "expected_statuses": [
+        200, // OK: Connection established
+        401, // Unauthorized: Server reachable but requires auth
+        404 // Not Found: Server reachable but path invalid
+    ]
+}
