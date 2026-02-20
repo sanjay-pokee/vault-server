@@ -8,7 +8,7 @@ from nacl.bindings import (
 )
 from nacl.utils import random as nacl_random
 
-BASE_URL = "https://diaphragmatically-scimitared-oda.ngrok-free.dev"
+BASE_URL = "http://localhost:8000"
 
 def derive_auth_key(password: str, salt: bytes) -> bytes:
     return hash_secret_raw(

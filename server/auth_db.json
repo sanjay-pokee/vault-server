@@ -41,5 +41,19 @@
     "mfa_secret": null,
     "mfa_enabled": false,
     "backup_codes": []
+  },
+  "test1": {
+    "salt": "7f57632c57b6d92348e7ac5caaff8493",
+    "verifier": "b5a2b4cd469947d3e6bf1c25d5b786598e1993bb525fa9c0e165823cb4bbfedd",
+    "mfa_secret": null,
+    "mfa_enabled": false,
+    "backup_codes": []
+  },
+  "test2": {
+    "salt": "73d4ca3f0ca04bc070cf03a2c8a00adb",
+    "verifier": "dfc724f0758a11ac0dd04209b4e1a4cc1845ce11e3ca6b75a3595b7506669147",
+    "mfa_secret": null,
+    "mfa_enabled": false,
+    "backup_codes": []
   }
 }
