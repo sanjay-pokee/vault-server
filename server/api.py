@@ -1,7 +1,25 @@
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request, Depends
 from server.security import security_manager   # shared rate-limiter / brute-force blocker
 from pydantic import BaseModel
 from pathlib import Path
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.responses import HTMLResponse
+import secrets
+
+app = FastAPI()
+security = HTTPBasic()
+
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, "admin")
+    correct_password = secrets.compare_digest(credentials.password, "admin")
+
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 # ── Auth helpers ───────────────────────────────────────────────────────────────
 from server.auth import (
@@ -465,3 +483,42 @@ def get_audit_logs(authorization: str = Header()):
         raise HTTPException(401, "Unauthorized")
 
     return {"logs": get_logs(user)}
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(username: str = Depends(verify_admin)):
+    try:
+        with open("server.log", "r") as f:
+            logs = f.readlines()[-200:]  # last 200 lines only
+            logs = "".join(logs)
+    except FileNotFoundError:
+        logs = "No logs found."
+
+    html_content = f"""
+    <html>
+        <head>
+            <title>Admin Dashboard</title>
+            <style>
+                body {{
+                    background-color: #111;
+                    color: #00ff88;
+                    font-family: monospace;
+                    padding: 20px;
+                }}
+                h1 {{
+                    color: white;
+                }}
+                pre {{
+                    background: black;
+                    padding: 15px;
+                    border-radius: 8px;
+                    overflow-x: auto;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Server Logs</h1>
+            <pre>{logs}</pre>
+        </body>
+    </html>
+    """
+    return html_content
