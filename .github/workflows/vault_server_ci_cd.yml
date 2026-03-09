@@ -1,0 +1,65 @@
+name: Vault Server CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'vault-server/**'
+      - '.github/workflows/vault_server_ci_cd.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'vault-server/**'
+
+jobs:
+  test_and_lint:
+    name: Test & Lint Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vault-server
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8
+
+      - name: Run flake8 (style lint)
+        run: flake8 . --count --max-line-length=120 --statistics --ignore=E501,W503,E402
+        continue-on-error: true
+
+      - name: Run tests
+        run: python -m pytest -v --tb=short
+        continue-on-error: true
+
+  deploy_to_render:
+    name: Deploy to Render
+    needs: test_and_lint
+    # Only deploy on pushes to main, not on pull requests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Render Deploy
+        run: |
+          # Fails the build if the RENDER_DEPLOY_HOOK secret is not set
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK secret is not set!"
+            exit 1
+          fi
+          
+          echo "Triggering Render deployment..."
+          curl -X GET "${{ secrets.RENDER_DEPLOY_HOOK }}"
