@@ -13,6 +13,29 @@ if not AUTH_DB.exists():
     AUTH_DB.write_text("{}")
 
 SESSIONS = {}
+CHALLENGES = {}
+
+def save_passkey(username: str, credential_id: str, public_key: str, sign_count: int, encrypted_master: str):
+    users = _load()
+    if username not in users:
+        raise ValueError("User not found")
+    users[username]["passkey"] = {
+        "credential_id": credential_id,
+        "public_key": public_key,
+        "sign_count": sign_count,
+        "encrypted_master": encrypted_master
+    }
+    _save(users)
+
+def get_passkey(username: str):
+    users = _load()
+    return users.get(username, {}).get("passkey")
+
+def update_passkey_sign_count(username: str, sign_count: int):
+    users = _load()
+    if username in users and "passkey" in users[username]:
+        users[username]["passkey"]["sign_count"] = sign_count
+        _save(users)
 
 def _load():
     text = AUTH_DB.read_text().strip()
