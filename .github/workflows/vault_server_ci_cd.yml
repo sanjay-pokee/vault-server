@@ -18,6 +18,7 @@ permissions:
   actions: write
   pull-requests: write
 
+
 jobs:
   test_and_lint:
     name: Test & Lint Server
