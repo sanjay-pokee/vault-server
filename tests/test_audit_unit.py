@@ -1,7 +1,7 @@
 
 import unittest
 import json
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock
 from pathlib import Path
 import sys
 import os
@@ -18,23 +18,25 @@ class TestAuditLog(unittest.TestCase):
         data_path = Path(__file__).parent / "data" / "audit_cases.jsonc"
         self.test_cases = load_json_with_comments(data_path)
 
+    @patch("server.audit._get_cipher")
     @patch("server.audit.datetime")
-    def test_log_action(self, mock_datetime):
+    def test_log_action(self, mock_datetime, mock_get_cipher):
         # Mock time to ensure consistent timestamp in tests
-        # We need to make sure isoformat returns a string, not a MagicMock
-        mock_datetime.datetime.now.return_value.isoformat.return_value = "2026-01-01T12:00:00"
-        # Also need to make sure the datetime object itself behaves enough like an object for json.dump if it's used directly
-        # But log_action calls isoformat(), so the above should be enough IF log_action uses the return value.
-        # Let's double check log_action implementation. it likely does: timestamp = datetime.datetime.utcnow().isoformat()
+        mock_datetime.now.return_value.isoformat.return_value = "2026-01-01T12:00:00"
+        
+        # Mock cipher to return data as-is (simulating plaintext for the test assertions)
+        mock_cipher = MagicMock()
+        mock_cipher.encrypt.side_effect = lambda x: x
+        mock_cipher.decrypt.side_effect = lambda x: x
+        mock_get_cipher.return_value = mock_cipher
 
         for case in self.test_cases:
             with self.subTest(msg=case["name"]):
                 print(f"Running audit test case: {case['name']}")
                 
                 # Mock file I/O
-                # We need to handle both read (loading existing logs) and write (saving new logs)
-                # Initial state: empty list
-                mock_file = mock_open(read_data='[]')
+                # Initial state: empty list in bytes (encrypted/plaintext mock handles conversion)
+                mock_file = mock_open(read_data=b'[]')
                 
                 with patch("builtins.open", mock_file):
                     log_action(case["username"], case["action"], case["details"])
@@ -42,26 +44,18 @@ class TestAuditLog(unittest.TestCase):
                     # Verify file was written
                     self.assertTrue(mock_file.called)
                     
-                    # Verify content written
-                    # Raises error if logic is wrong, but we want to inspect what was written.
-                    # This is tricky with mock_open and json.dump, often easier to check calls.
-                    # Or simpler: verify the structure appended.
-                    
-                    # Let's inspect the arguments passed to json.dump (or write)
-                    # Implementation detail: log_action reads, appends, writes.
-                    
-                    # We can verify that the last write call contained our expected entry
+                    # Inspect what was written
                     handle = mock_file()
-                    written_content = ""
+                    written_bytes = b""
                     for call in handle.write.call_args_list:
-                         written_content += call[0][0]
+                         written_bytes += call[0][0]
+                    
+                    written_content = written_bytes.decode()
                     
                     # Check if our expected entry is in the written content
                     expected = case["expected_log_entry"]
                     expected["timestamp"] = "2026-01-01T12:00:00"
                     
-                    # Since json.dump writes the whole list, we check if our dict is inside
-                    # A robust way is to try to parse it, but let's just check strings for now
                     self.assertIn(expected["action"], written_content)
                     self.assertIn(expected["username"], written_content)
 
