@@ -4,6 +4,7 @@ import json
 import shutil
 import datetime
 import threading
+import re
 from pathlib import Path
 from cryptography.fernet import Fernet
 
@@ -218,8 +219,13 @@ def list_backups(username: str):
         # ── Timestamp parsing ──────────────────────────────────────────────
         timestamp = None
         try:
-            # The timestamp string is the 'remaining' part minus the .enc extension
-            ts_str = Path(remaining).stem
+            # The timestamp portion is the 'remaining' part minus the .enc extension.
+            # Some legacy backups include extra numeric segments before the actual
+            # timestamp (e.g. 1770803340_20260211_151912). We extract the trailing
+            # canonical timestamp pattern instead of requiring the full stem to match.
+            ts_stem = Path(remaining).stem
+            ts_match = re.search(r"(\d{8}_\d{6}(?:_\d{6})?)$", ts_stem)
+            ts_str = ts_match.group(1) if ts_match else ts_stem
 
             # Try both timestamp formats:
             #   New format (microseconds): %Y%m%d_%H%M%S_%f  e.g. 20260221_080000_123456
@@ -231,8 +237,8 @@ def list_backups(username: str):
                 except ValueError:
                     continue       # this format didn't match → try the next one
             else:
-                # The for-loop completed without a break → neither format matched
-                # Fallback to file mtime if the timestamp in filename is non-standard
+                # The for-loop completed without a break → neither format matched.
+                # Fallback to file mtime if the timestamp in filename is non-standard.
                 dt = datetime.datetime.fromtimestamp(f.stat().st_mtime)
 
             timestamp = dt.isoformat()   # convert to ISO-8601 string for the API
